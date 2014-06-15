@@ -1,0 +1,11 @@
+Command Action Argument(s) Example
+O write a byte Address, Value# O200001,CA#
+o read a byte Address,# o200001,#
+H write a half word Address, Value# H200002,CAFE#
+h read a half word Address,# h200002,#
+W write a word Address, Value# W200000,CAFEDECA#
+w read a word Address,# w200000,#
+S send a file Address,# S200000,#
+R receive a file Address, NbOfBytes# R200000,1234#
+G go Address# G200200#
+V display version No argument V#
