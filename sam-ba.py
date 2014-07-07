@@ -9,9 +9,11 @@ import glob
 import time
 import usb
 
+print "please wait..."
+
 raw = open("./helium.bin").read()
 raw += '\x00'*(256-len(raw)%256)
-print len(raw)
+
 fw = bitstring.ConstBitStream(bytes=raw)
 
 dev = usb.core.find(idVendor=0x03eb,idProduct=0x6124)
@@ -28,19 +30,17 @@ flashBase = 0x80000
 offset = 0
 
 def getStr():
-	print ''.join(map(chr, dev.read(0x82, 512, 1, 100)))
+	return ''.join(map(chr, dev.read(0x82, 512, 1, 100)))
 
 def putStr(x):
-	print x
 	return dev.write(0x01, x, 1, 100)
 
 # erase flash
-cmd = "W400E0804,5A000005#"
-putStr(cmd)
+putStr("W400E0804,5A000005#")
 time.sleep(0.1)
 getStr()
-cmd = "w400E0808,4#"
-putStr(cmd)
+# check if flash is erased
+putStr("w400E0808,4#")
 time.sleep(0.01)
 getStr()
 getStr()
@@ -48,6 +48,7 @@ getStr()
 
 page = 0
 
+# write each word
 for pos in xrange(0,fw.length/8,4):
 	fw.bytepos = pos
 	addr = hex(flashBase+pos).lstrip("0x").rstrip("L").zfill(8)
@@ -62,20 +63,28 @@ for pos in xrange(0,fw.length/8,4):
 		quit()
 	# if at end of page
 	if pos & 0xFC == 0xFC:
+		# write page
 		cmd = "W400E0804,5A00"+hex(page).lstrip("0x").zfill(2)+"03#"
 		putStr(cmd)
 		time.sleep(0.01)
 		getStr()
 		getStr()
-		cmd = "w400E0808,4#"
-		putStr(cmd)
+		# check that page is written
+		putStr("w400E0808,4#")
 		time.sleep(0.01)
 		getStr()
 		getStr()
-		getStr()
+		assert int(getStr().strip(), 16) == 1
 		page += 1
 
-# disable SAM-BA: 0x5a000000 | (1 << 8) | 0x0b) < 0)
-#dev.write(0x01, "W400E0804,5A00010B#", 1, 100)
-# last thing - jump to flash
-putStr("G00080000#")
+
+# disable SAM-BA
+putStr("W400E0804,5A00010B#")
+getStr()
+getStr()
+
+# jump to flash
+putStr("G00000000#")
+getStr()
+
+print "good to go!"
